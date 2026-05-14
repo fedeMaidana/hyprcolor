@@ -1,7 +1,7 @@
 // ─── < Modules > ────────────────────────────────────────────────────
 
-mod hooks;
+mod runner;
 
 // ─── < Public API > ─────────────────────────────────────────────────
 
-pub use hooks::run_all;
+pub use runner::run_all;
