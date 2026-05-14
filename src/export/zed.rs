@@ -57,7 +57,7 @@ fn zed_themes_dir() -> Option<PathBuf> {
 // ─── < Build Theme > ───────
 
 fn build_theme(palette: &Palette) -> Value {
-    let foreground = opaque(&palette.foreground);
+    let foreground = "#d6d9e0ff".to_string();
 
     let accent = opaque(&palette.accent);
     let accent_1 = opaque(&palette.accent_1);
@@ -70,8 +70,8 @@ fn build_theme(palette: &Palette) -> Value {
 
     let background_muted = background.clone();
 
-    let foreground_muted = with_alpha(&palette.foreground, "99");
-    let foreground_disabled = with_alpha(&palette.foreground, "55");
+    let foreground_muted = with_alpha(&foreground, "99");
+    let foreground_disabled = with_alpha(&foreground, "55");
 
     let accent_soft = with_alpha(&palette.accent, "33");
     let accent_hover = with_alpha(&palette.accent, "55");
@@ -354,7 +354,7 @@ fn insert_syntax(
     let constant = role_color(accent_2, foreground, background, 0.08, 0.14, "ee");
     let number = role_color(accent_2, foreground, background, 0.04, 0.20, "ee");
 
-    let string = role_color(accent_1, foreground, background, 0.18, 0.16, "ee");
+    let string = "#9dbb80ff";
     let special = role_color(accent_3, foreground, background, 0.16, 0.02, "ff");
 
     syntax.insert("comment".to_string(), syntax_entry(comment, Some("italic"), None));
@@ -381,8 +381,8 @@ fn insert_syntax(
     syntax.insert("constant".to_string(), syntax_entry(&constant, None, None));
     syntax.insert("number".to_string(), syntax_entry(&number, None, None));
 
-    syntax.insert("string".to_string(), syntax_entry(&string, None, None));
-    syntax.insert("text.literal".to_string(), syntax_entry(&string, None, None));
+    syntax.insert("string".to_string(), syntax_entry(string, None, None));
+    syntax.insert("text.literal".to_string(), syntax_entry(string, None, None));
     syntax.insert("string.escape".to_string(), syntax_entry(&special, None, None));
 
     syntax.insert("variable.special".to_string(), syntax_entry(&special, None, None));
