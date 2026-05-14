@@ -41,11 +41,10 @@ pub fn extract_palette(path: &Path) -> Result<Palette> {
 
     colors.sort_by_key(|(_, count)| std::cmp::Reverse(*count));
 
-    let dominant = colors.first().map(|(color, _)| *color).unwrap_or(Rgb {
-        r: 20,
-        g: 20,
-        b: 20,
-    });
+    let dominant = colors
+        .first()
+        .map(|(color, _)| *color)
+        .unwrap_or(Rgb { r: 20, g: 20, b: 20 });
 
     let accents = pick_accents(&colors);
 
@@ -54,17 +53,9 @@ pub fn extract_palette(path: &Path) -> Result<Palette> {
     let surface_variant = dominant.darken(0.25);
 
     let foreground = if background.luminance() > 0.5 {
-        Rgb {
-            r: 20,
-            g: 20,
-            b: 20,
-        }
+        Rgb { r: 20, g: 20, b: 20 }
     } else {
-        Rgb {
-            r: 238,
-            g: 238,
-            b: 238,
-        }
+        Rgb { r: 238, g: 238, b: 238 }
     };
 
     Ok(Palette {
@@ -116,11 +107,7 @@ fn pick_accents(colors: &[(Rgb, u32)]) -> [Rgb; 3] {
     }
 
     while picked.len() < 3 {
-        picked.push(Rgb {
-            r: 136,
-            g: 136,
-            b: 136,
-        });
+        picked.push(Rgb { r: 136, g: 136, b: 136 });
     }
 
     [picked[0], picked[1], picked[2]]

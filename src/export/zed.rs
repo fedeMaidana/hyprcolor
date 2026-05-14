@@ -22,18 +22,19 @@ struct TerminalColors<'a> {
     accent_3: &'a str,
 }
 
+struct PlayerColors<'a> {
+    cursor: &'a str,
+    background: &'a str,
+    selection: &'a str,
+}
+
 // ─── < Public Functions > ───────────────────────────────────────────
 
 pub fn export(palette: &Palette) -> Result<()> {
-    let theme_dir =
-        zed_themes_dir().context("no se pudo resolver el directorio de themes de Zed")?;
+    let theme_dir = zed_themes_dir().context("no se pudo resolver el directorio de themes de Zed")?;
 
-    fs::create_dir_all(&theme_dir).with_context(|| {
-        format!(
-            "no se pudo crear el directorio de themes de Zed: {}",
-            theme_dir.display()
-        )
-    })?;
+    fs::create_dir_all(&theme_dir)
+        .with_context(|| format!("no se pudo crear el directorio de themes de Zed: {}", theme_dir.display()))?;
 
     let theme = build_theme(palette);
     let content = serde_json::to_string_pretty(&theme)?;
@@ -63,12 +64,11 @@ fn build_theme(palette: &Palette) -> Value {
     let accent_2 = opaque(&palette.accent_2);
     let accent_3 = opaque(&palette.accent_3);
 
-    let background = dim(&palette.background, "#000000", 0.35, "ee");
-    let surface = dim(&palette.surface, "#000000", 0.25, "dd");
-    let surface_variant = dim(&palette.surface_variant, "#000000", 0.20, "dd");
+    let background = "#000000ff".to_string();
+    let surface = background.clone();
+    let surface_variant = "#101010ff".to_string();
 
-    let background_soft = dim(&palette.background, "#000000", 0.40, "cc");
-    let background_muted = dim(&palette.background, "#000000", 0.45, "bb");
+    let background_muted = background.clone();
 
     let foreground_muted = with_alpha(&palette.foreground, "99");
     let foreground_disabled = with_alpha(&palette.foreground, "55");
@@ -76,45 +76,63 @@ fn build_theme(palette: &Palette) -> Value {
     let accent_soft = with_alpha(&palette.accent, "33");
     let accent_hover = with_alpha(&palette.accent, "55");
 
+    let bracket_background = with_alpha(&palette.accent, "33");
+    let git_name_color = role_color(&palette.accent, &foreground, &background, 0.08, 0.00, "ff");
+    let cursor_color = role_color(&palette.accent, &foreground, &background, 0.00, 0.00, "ff");
+    let cursor_selection = with_alpha(&cursor_color, "3d");
+
     let transparent = "#00000000".to_string();
 
     let mut style = Map::new();
 
-    insert_array(
+    insert_array(&mut style, "accents", vec![accent.clone(), accent_1.clone(), accent_2.clone(), accent_3.clone()]);
+
+    let player_1_selection = with_alpha(&accent_1, "3d");
+    let player_2_selection = with_alpha(&accent_2, "3d");
+    let player_3_selection = with_alpha(&accent_3, "3d");
+
+    insert_players(
         &mut style,
-        "accents",
         vec![
-            accent.clone(),
-            accent_1.clone(),
-            accent_2.clone(),
-            accent_3.clone(),
+            PlayerColors {
+                cursor: cursor_color.as_str(),
+                background: cursor_color.as_str(),
+                selection: cursor_selection.as_str(),
+            },
+            PlayerColors {
+                cursor: accent_1.as_str(),
+                background: accent_1.as_str(),
+                selection: player_1_selection.as_str(),
+            },
+            PlayerColors {
+                cursor: accent_2.as_str(),
+                background: accent_2.as_str(),
+                selection: player_2_selection.as_str(),
+            },
+            PlayerColors {
+                cursor: accent_3.as_str(),
+                background: accent_3.as_str(),
+                selection: player_3_selection.as_str(),
+            },
         ],
     );
 
     insert(&mut style, "background.appearance", "blurred");
 
     insert(&mut style, "background", background.clone());
-    insert(&mut style, "surface.background", background_soft.clone());
-    insert(&mut style, "elevated_surface.background", surface.clone());
-    insert(&mut style, "panel.background", background_soft.clone());
-    insert(&mut style, "editor.background", background_muted.clone());
-    insert(&mut style, "terminal.background", background_muted.clone());
+    insert(&mut style, "surface.background", background.clone());
+    insert(&mut style, "elevated_surface.background", background.clone());
+    insert(&mut style, "panel.background", background.clone());
+    insert(&mut style, "editor.background", background.clone());
+    insert(&mut style, "terminal.background", background.clone());
 
-    insert(&mut style, "title_bar.background", background_soft.clone());
-    insert(
-        &mut style,
-        "title_bar.inactive_background",
-        background_muted.clone(),
-    );
-    insert(&mut style, "toolbar.background", background_soft.clone());
-    insert(&mut style, "tab_bar.background", background_soft.clone());
-    insert(&mut style, "tab.active_background", surface.clone());
-    insert(
-        &mut style,
-        "tab.inactive_background",
-        background_muted.clone(),
-    );
-    insert(&mut style, "status_bar.background", background_soft.clone());
+    insert(&mut style, "title_bar.background", background.clone());
+    insert(&mut style, "title_bar.inactive_background", background_muted.clone());
+    insert(&mut style, "toolbar.background", background.clone());
+    insert(&mut style, "tab_bar.background", background.clone());
+    insert(&mut style, "tab.active_background", background.clone());
+    insert(&mut style, "tab.inactive_background", background.clone());
+    insert(&mut style, "status_bar.background", background.clone());
 
     insert(&mut style, "border", background.clone());
     insert(&mut style, "border.variant", background.clone());
@@ -128,7 +146,7 @@ fn build_theme(palette: &Palette) -> Value {
     insert(&mut style, "pane_group.border", background.clone());
 
     insert(&mut style, "text", foreground.clone());
-    insert(&mut style, "text.accent", accent.clone());
+    insert(&mut style, "text.accent", git_name_color.clone());
     insert(&mut style, "text.muted", foreground_muted.clone());
     insert(&mut style, "text.placeholder", foreground_muted.clone());
     insert(&mut style, "text.disabled", foreground_disabled.clone());
@@ -157,12 +175,8 @@ fn build_theme(palette: &Palette) -> Value {
     insert(&mut style, "editor.line_number", "#5f6775ff");
     insert(&mut style, "editor.active_line_number", "#c6ceddff");
 
-    insert(&mut style, "editor.active_line.background", "#ffffff06");
-    insert(
-        &mut style,
-        "editor.highlighted_line.background",
-        "#ffffff06",
-    );
+    insert(&mut style, "editor.active_line.background", background.clone());
+    insert(&mut style, "editor.highlighted_line.background", background.clone());
 
     insert(&mut style, "editor.indent_guide", "#ffffff10");
     insert(&mut style, "editor.indent_guide_active", "#ffffff1a");
@@ -171,37 +185,25 @@ fn build_theme(palette: &Palette) -> Value {
 
     insert(&mut style, "editor.invisible", "#ffffff22");
 
-    insert(
-        &mut style,
-        "scrollbar.thumb.background",
-        accent_soft.clone(),
-    );
-    insert(
-        &mut style,
-        "scrollbar.thumb.hover_background",
-        accent_hover.clone(),
-    );
+    insert(&mut style, "editor.document_highlight.bracket_background", bracket_background.clone());
+    insert(&mut style, "editor.document_highlight.read_background", with_alpha(&palette.accent, "22"));
+    insert(&mut style, "editor.document_highlight.write_background", with_alpha(&palette.accent_2, "26"));
+
+    insert(&mut style, "scrollbar.thumb.background", accent_soft.clone());
+    insert(&mut style, "scrollbar.thumb.hover_background", accent_hover.clone());
     insert(&mut style, "scrollbar.thumb.border", transparent.clone());
-    insert(
-        &mut style,
-        "scrollbar.track.background",
-        transparent.clone(),
-    );
+    insert(&mut style, "scrollbar.track.background", transparent.clone());
     insert(&mut style, "scrollbar.track.border", transparent.clone());
 
     insert(&mut style, "search.match_background", accent_soft.clone());
     insert(&mut style, "drop_target.background", accent_soft.clone());
     insert(&mut style, "link_text.hover", accent.clone());
 
-    insert_status_colors(
-        &mut style,
-        &background,
-        &foreground,
-        &accent,
-        &accent_1,
-        &accent_2,
-        &accent_3,
-    );
+    insert(&mut style, "hint", git_name_color.clone());
+    insert(&mut style, "hint.background", with_alpha(&git_name_color, "18"));
+    insert(&mut style, "hint.border", with_alpha(&git_name_color, "66"));
+
+    insert_status_colors(&mut style);
 
     let terminal_colors = TerminalColors {
         background: background.as_str(),
@@ -215,15 +217,7 @@ fn build_theme(palette: &Palette) -> Value {
 
     insert_terminal_colors(&mut style, terminal_colors);
 
-    insert_syntax(
-        &mut style,
-        &background,
-        &foreground,
-        &accent,
-        &accent_1,
-        &accent_2,
-        &accent_3,
-    );
+    insert_syntax(&mut style, &background, &foreground, &accent, &accent_1, &accent_2, &accent_3);
 
     let mut theme = Map::new();
     theme.insert("name".to_string(), Value::String(THEME_NAME.to_string()));
@@ -231,19 +225,10 @@ fn build_theme(palette: &Palette) -> Value {
     theme.insert("style".to_string(), Value::Object(style));
 
     let mut root = Map::new();
-    root.insert(
-        "$schema".to_string(),
-        Value::String("https://zed.dev/schema/themes/v0.2.0.json".to_string()),
-    );
+    root.insert("$schema".to_string(), Value::String("https://zed.dev/schema/themes/v0.2.0.json".to_string()));
     root.insert("name".to_string(), Value::String(THEME_NAME.to_string()));
-    root.insert(
-        "author".to_string(),
-        Value::String("Federico Maidana".to_string()),
-    );
-    root.insert(
-        "themes".to_string(),
-        Value::Array(vec![Value::Object(theme)]),
-    );
+    root.insert("author".to_string(), Value::String("Federico Maidana".to_string()));
+    root.insert("themes".to_string(), Value::Array(vec![Value::Object(theme)]));
 
     Value::Object(root)
 }
@@ -257,46 +242,54 @@ fn insert(style: &mut Map<String, Value>, key: &str, value: impl Into<String>) {
 // ─── < Insert Array > ───────
 
 fn insert_array(style: &mut Map<String, Value>, key: &str, values: Vec<String>) {
-    style.insert(
-        key.to_string(),
-        Value::Array(values.into_iter().map(Value::String).collect()),
-    );
+    style.insert(key.to_string(), Value::Array(values.into_iter().map(Value::String).collect()));
+}
+
+// ─── < Insert Players > ───────
+
+fn insert_players(style: &mut Map<String, Value>, players: Vec<PlayerColors<'_>>) {
+    let players = players
+        .into_iter()
+        .map(|player| {
+            let mut value = Map::new();
+
+            value.insert("cursor".to_string(), Value::String(player.cursor.to_string()));
+            value.insert("background".to_string(), Value::String(player.background.to_string()));
+            value.insert("selection".to_string(), Value::String(player.selection.to_string()));
+
+            Value::Object(value)
+        })
+        .collect();
+
+    style.insert("players".to_string(), Value::Array(players));
 }
 
 // ─── < Insert Status Colors > ───────
 
-fn insert_status_colors(
-    style: &mut Map<String, Value>,
-    background: &str,
-    foreground: &str,
-    accent: &str,
-    accent_1: &str,
-    accent_2: &str,
-    accent_3: &str,
-) {
-    let success = role_color(accent_2, foreground, background, 0.12, 0.04, "ff");
-    let warning = role_color(accent_1, foreground, background, 0.08, 0.22, "ff");
-    let error = role_color(accent_3, foreground, background, 0.10, 0.06, "ff");
-    let info = role_color(accent, foreground, background, 0.10, 0.03, "ff");
+fn insert_status_colors(style: &mut Map<String, Value>) {
+    let success = "#a6e3a1ff";
+    let warning = "#d9a66aff";
+    let error = "#f38ba8ff";
+    let info = "#89b4faff";
 
-    let created = success.clone();
-    let modified = role_color(accent_1, foreground, background, 0.04, 0.34, "ff");
-    let deleted = role_color(accent_3, foreground, background, 0.04, 0.18, "ff");
-    let conflict = role_color(accent_2, foreground, background, 0.04, 0.26, "ff");
-    let renamed = role_color(accent, foreground, background, 0.12, 0.08, "ff");
-    let ignored = with_alpha(foreground, "55");
+    let created = "#a6e3a1ff";
+    let modified = "#c69c6dff";
+    let deleted = "#f38ba8ff";
+    let conflict = "#fab387ff";
+    let renamed = "#89b4faff";
+    let ignored = "#6c7086ff";
 
-    insert_status_role(style, "success", &success);
-    insert_status_role(style, "warning", &warning);
-    insert_status_role(style, "error", &error);
-    insert_status_role(style, "info", &info);
+    insert_status_role(style, "success", success);
+    insert_status_role(style, "warning", warning);
+    insert_status_role(style, "error", error);
+    insert_status_role(style, "info", info);
 
-    insert_status_role(style, "created", &created);
-    insert_status_role(style, "modified", &modified);
-    insert_status_role(style, "deleted", &deleted);
-    insert_status_role(style, "conflict", &conflict);
-    insert_status_role(style, "renamed", &renamed);
-    insert_status_role(style, "ignored", &ignored);
+    insert_status_role(style, "created", created);
+    insert_status_role(style, "modified", modified);
+    insert_status_role(style, "deleted", deleted);
+    insert_status_role(style, "conflict", conflict);
+    insert_status_role(style, "renamed", renamed);
+    insert_status_role(style, "ignored", ignored);
 }
 
 // ─── < Insert Status Role > ───────
@@ -364,41 +357,23 @@ fn insert_syntax(
     let string = role_color(accent_1, foreground, background, 0.18, 0.16, "ee");
     let special = role_color(accent_3, foreground, background, 0.16, 0.02, "ff");
 
-    syntax.insert(
-        "comment".to_string(),
-        syntax_entry(comment, Some("italic"), None),
-    );
-    syntax.insert(
-        "comment.doc".to_string(),
-        syntax_entry(comment, Some("italic"), None),
-    );
+    syntax.insert("comment".to_string(), syntax_entry(comment, Some("italic"), None));
+    syntax.insert("comment.doc".to_string(), syntax_entry(comment, Some("italic"), None));
 
     syntax.insert("primary".to_string(), syntax_entry(&primary, None, None));
     syntax.insert("variable".to_string(), syntax_entry(&variable, None, None));
     syntax.insert("operator".to_string(), syntax_entry(&muted, None, None));
     syntax.insert("punctuation".to_string(), syntax_entry(&subtle, None, None));
 
-    syntax.insert(
-        "keyword".to_string(),
-        syntax_entry(&keyword, None, Some(500)),
-    );
+    syntax.insert("keyword".to_string(), syntax_entry(&keyword, None, Some(500)));
     syntax.insert("preproc".to_string(), syntax_entry(&keyword, None, None));
     syntax.insert("tag".to_string(), syntax_entry(&keyword, None, None));
 
-    syntax.insert(
-        "function".to_string(),
-        syntax_entry(&function, None, Some(500)),
-    );
-    syntax.insert(
-        "title".to_string(),
-        syntax_entry(&function, None, Some(600)),
-    );
+    syntax.insert("function".to_string(), syntax_entry(&function, None, Some(500)));
+    syntax.insert("title".to_string(), syntax_entry(&function, None, Some(600)));
 
     syntax.insert("type".to_string(), syntax_entry(&type_color, None, None));
-    syntax.insert(
-        "constructor".to_string(),
-        syntax_entry(&type_color, None, None),
-    );
+    syntax.insert("constructor".to_string(), syntax_entry(&type_color, None, None));
 
     syntax.insert("property".to_string(), syntax_entry(&property, None, None));
     syntax.insert("label".to_string(), syntax_entry(&property, None, None));
@@ -407,31 +382,13 @@ fn insert_syntax(
     syntax.insert("number".to_string(), syntax_entry(&number, None, None));
 
     syntax.insert("string".to_string(), syntax_entry(&string, None, None));
-    syntax.insert(
-        "text.literal".to_string(),
-        syntax_entry(&string, None, None),
-    );
-    syntax.insert(
-        "string.escape".to_string(),
-        syntax_entry(&special, None, None),
-    );
+    syntax.insert("text.literal".to_string(), syntax_entry(&string, None, None));
+    syntax.insert("string.escape".to_string(), syntax_entry(&special, None, None));
 
-    syntax.insert(
-        "variable.special".to_string(),
-        syntax_entry(&special, None, None),
-    );
-    syntax.insert(
-        "emphasis".to_string(),
-        syntax_entry(&function, Some("italic"), None),
-    );
-    syntax.insert(
-        "link_uri".to_string(),
-        syntax_entry(&function, Some("normal"), None),
-    );
-    syntax.insert(
-        "predictive".to_string(),
-        syntax_entry(comment, Some("italic"), None),
-    );
+    syntax.insert("variable.special".to_string(), syntax_entry(&special, None, None));
+    syntax.insert("emphasis".to_string(), syntax_entry(&function, Some("italic"), None));
+    syntax.insert("link_uri".to_string(), syntax_entry(&function, Some("normal"), None));
+    syntax.insert("predictive".to_string(), syntax_entry(comment, Some("italic"), None));
 
     style.insert("syntax".to_string(), Value::Object(syntax));
 }
@@ -444,10 +401,7 @@ fn syntax_entry(color: &str, font_style: Option<&str>, font_weight: Option<u64>)
     entry.insert("color".to_string(), Value::String(color.to_string()));
 
     if let Some(font_style) = font_style {
-        entry.insert(
-            "font_style".to_string(),
-            Value::String(font_style.to_string()),
-        );
+        entry.insert("font_style".to_string(), Value::String(font_style.to_string()));
     }
 
     if let Some(font_weight) = font_weight {
@@ -518,12 +472,7 @@ fn mix_hex(left: &str, right: &str, right_amount: f32, alpha: &str) -> String {
         mixed.round().clamp(0.0, 255.0) as u8
     };
 
-    rgba(
-        mix_channel(left_r, right_r),
-        mix_channel(left_g, right_g),
-        mix_channel(left_b, right_b),
-        alpha,
-    )
+    rgba(mix_channel(left_r, right_r), mix_channel(left_g, right_g), mix_channel(left_b, right_b), alpha)
 }
 
 // ─── < Parse RGB > ───────

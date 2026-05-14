@@ -53,8 +53,7 @@ impl App {
             should_close: false,
         };
 
-        let mut event_loop: EventLoop<AppState> =
-            EventLoop::try_new().context("no se pudo crear calloop EventLoop")?;
+        let mut event_loop: EventLoop<AppState> = EventLoop::try_new().context("no se pudo crear calloop EventLoop")?;
 
         let loop_handle = event_loop.handle();
 
@@ -77,9 +76,7 @@ impl App {
         app.refresh_colors()?;
 
         while !app.should_close {
-            event_loop
-                .dispatch(None, &mut app)
-                .context("event_loop dispatch")?;
+            event_loop.dispatch(None, &mut app).context("event_loop dispatch")?;
         }
 
         Ok(())

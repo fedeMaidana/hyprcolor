@@ -21,8 +21,8 @@ pub fn run_all(palette: &Palette) -> Result<()> {
         return Ok(());
     }
 
-    for entry in fs::read_dir(&hooks_dir)
-        .with_context(|| format!("no se pudo leer hooks dir {}", hooks_dir.display()))?
+    for entry in
+        fs::read_dir(&hooks_dir).with_context(|| format!("no se pudo leer hooks dir {}", hooks_dir.display()))?
     {
         let path = entry?.path();
 
@@ -45,12 +45,7 @@ fn hooks_dir() -> Option<PathBuf> {
         return Some(PathBuf::from(config_home).join("hyprcolor/hooks"));
     }
 
-    env::var_os("HOME").map(|home| {
-        PathBuf::from(home)
-            .join(".config")
-            .join("hyprcolor")
-            .join("hooks")
-    })
+    env::var_os("HOME").map(|home| PathBuf::from(home).join(".config").join("hyprcolor").join("hooks"))
 }
 
 // ─── < Is Executable > ───────
