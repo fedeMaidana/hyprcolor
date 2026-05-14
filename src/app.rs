@@ -14,6 +14,7 @@ use wayland_client::Connection;
 use crate::{
     config::Config,
     export::Exporters,
+    hooks,
     palette::extract_palette,
     wallpaper::{WallpaperFingerprint, current_wallpaper_path},
     wayland,
@@ -103,7 +104,9 @@ impl AppState {
         log::info!("wallpaper changed: {}", wallpaper.display());
 
         let palette = extract_palette(&wallpaper)?;
+
         self.exporters.export_all(&palette)?;
+        hooks::run_all(&palette)?;
 
         self.last_wallpaper = Some(fingerprint);
 

@@ -4,6 +4,7 @@ mod css;
 mod env;
 mod json;
 mod writer;
+mod zed;
 
 // ─── < Imports > ────────────────────────────────────────────────────
 
@@ -31,6 +32,7 @@ impl Exporters {
         env::export(&self.output_dir, palette)?;
         css::export(&self.output_dir, palette)?;
         json::export(&self.output_dir, palette)?;
+        zed::export(palette)?;
 
         Ok(())
     }

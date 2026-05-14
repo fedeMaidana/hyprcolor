@@ -8,6 +8,7 @@ mod app;
 mod config;
 mod export;
 mod fs;
+mod hooks;
 mod logging;
 mod palette;
 mod wallpaper;

@@ -5,9 +5,9 @@ use std::{env, fs, path::PathBuf, process::Command};
 // ─── < Public Functions > ────────────────────────────────────────────────────
 
 pub fn current_wallpaper_path() -> Option<PathBuf> {
-    current_from_hyprpaper()
+    current_from_hyprwall_cache()
         .or_else(current_from_swww)
-        .or_else(current_from_hyprwall_cache)
+        .or_else(current_from_hyprpaper)
 }
 
 // ─── < Private Functions > ────────────────────────────────────────────────────
