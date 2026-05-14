@@ -80,7 +80,7 @@ pub fn extract_palette(path: &Path) -> Result<Palette> {
     })
 }
 
-// ─── < Private FUnctions > ────────────────────────────────────────────────────
+// ─── < Private Functions > ────────────────────────────────────────────────────
 
 fn pick_accents(colors: &[(Rgb, u32)]) -> [Rgb; 3] {
     let mut picked = Vec::new();
