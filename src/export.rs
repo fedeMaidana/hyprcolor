@@ -3,6 +3,7 @@
 mod css;
 mod env;
 mod json;
+mod lua;
 mod writer;
 mod zed;
 
@@ -32,6 +33,7 @@ impl Exporters {
         env::export(&self.output_dir, palette)?;
         css::export(&self.output_dir, palette)?;
         json::export(&self.output_dir, palette)?;
+        lua::export(&self.output_dir, palette)?;
         zed::export(palette)?;
 
         Ok(())
