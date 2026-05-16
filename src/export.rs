@@ -6,8 +6,10 @@ mod fastfetch;
 mod ghostty;
 mod json;
 mod lua;
+mod starship;
 mod writer;
 mod zed;
+mod zsh;
 
 // ─── < Imports > ────────────────────────────────────────────────────
 
@@ -36,9 +38,11 @@ impl Exporters {
         env::export(&self.output_dir, palette)?;
         json::export(&self.output_dir, palette)?;
         lua::export(&self.output_dir, palette)?;
+        zsh::export(&self.output_dir, palette)?;
         zed::export(palette)?;
         fastfetch::export(palette)?;
         ghostty::export(palette)?;
+        starship::export(palette)?;
 
         Ok(())
     }
