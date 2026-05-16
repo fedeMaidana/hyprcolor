@@ -3,6 +3,7 @@
 mod css;
 mod env;
 mod fastfetch;
+mod ghostty;
 mod json;
 mod lua;
 mod writer;
@@ -37,6 +38,7 @@ impl Exporters {
         lua::export(&self.output_dir, palette)?;
         zed::export(palette)?;
         fastfetch::export(palette)?;
+        ghostty::export(palette)?;
 
         Ok(())
     }
