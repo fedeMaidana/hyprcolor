@@ -50,4 +50,16 @@ impl Rgb {
             b: (self.b as f32 * factor) as u8,
         }
     }
+
+    pub fn relative_luminance(self) -> f32 {
+        let linearize = |c: u8| -> f32 {
+            let c = c as f32 / 255.0;
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linearize(self.r) + 0.7152 * linearize(self.g) + 0.0722 * linearize(self.b)
+    }
 }

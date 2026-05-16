@@ -295,12 +295,22 @@ fn relaxed_swatch_score(color: Rgb, count: u32) -> f32 {
 
 fn normalize_swatch(color: Rgb) -> Rgb {
     let mut hsl = Hsl::from_rgb(color);
-
     hsl.s = hsl.s.max(0.42);
+    hsl.l = hsl.l.clamp(0.38, 0.74);
 
-    hsl.l = hsl.l.clamp(0.38, 0.72);
-
-    hsl.to_rgb()
+    let rgb = hsl.to_rgb();
+    if rgb.relative_luminance() < 0.12 {
+        let mut boosted = hsl;
+        for _ in 0..6 {
+            boosted.l = (boosted.l + 0.06).min(0.85);
+            let candidate = boosted.to_rgb();
+            if candidate.relative_luminance() >= 0.12 {
+                return candidate;
+            }
+        }
+        return boosted.to_rgb();
+    }
+    rgb
 }
 
 // ─── < Complete With Derived Swatches > ──────
@@ -374,11 +384,22 @@ fn ui_color_score(color: Rgb) -> f32 {
 
 fn normalize_ui_color(color: Rgb) -> Rgb {
     let mut hsl = Hsl::from_rgb(color);
-
     hsl.s = hsl.s.max(0.48);
-    hsl.l = hsl.l.clamp(0.42, 0.68);
+    hsl.l = hsl.l.clamp(0.42, 0.74);
 
-    hsl.to_rgb()
+    let rgb = hsl.to_rgb();
+    if rgb.relative_luminance() < 0.18 {
+        let mut boosted = hsl;
+        for _ in 0..8 {
+            boosted.l = (boosted.l + 0.06).min(0.88);
+            let candidate = boosted.to_rgb();
+            if candidate.relative_luminance() >= 0.18 {
+                return candidate;
+            }
+        }
+        return boosted.to_rgb();
+    }
+    rgb
 }
 
 // ─── < Hue To RGB > ──────
