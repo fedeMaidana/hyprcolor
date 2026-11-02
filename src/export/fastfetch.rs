@@ -35,12 +35,10 @@ pub fn export(palette: &Palette) -> Result<()> {
 // ─── < Private Functions > ──────────────────────────────────────────
 
 fn config_content(palette: &Palette) -> Result<String> {
-    let logo_path = current_wallpaper_image_path().unwrap_or_else(|| {
-        palette
-            .wallpaper
-            .canonicalize()
-            .unwrap_or_else(|_| palette.wallpaper.clone())
-    });
+    let logo_path = palette
+        .wallpaper
+        .canonicalize()
+        .unwrap_or_else(|_| palette.wallpaper.clone());
 
     let logo_source = logo_path.to_string_lossy().to_string();
 
@@ -288,19 +286,39 @@ fn fastfetch_config_file() -> PathBuf {
         .join("config.jsonc")
 }
 
-fn current_wallpaper_image_path() -> Option<PathBuf> {
-    if let Some(cache_home) = env::var_os("XDG_CACHE_HOME") {
-        return Some(
-            PathBuf::from(cache_home)
-                .join("hyprwall")
-                .join("current_wallpaper_image"),
-        );
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    env::var_os("HOME").map(|home| {
-        PathBuf::from(home)
-            .join(".cache")
-            .join("hyprwall")
-            .join("current_wallpaper_image")
-    })
+    #[test]
+    fn logo_and_colors_follow_the_same_palette() {
+        let mut palette = Palette {
+            wallpaper: PathBuf::from("/wallpapers/first wallpaper.png"),
+            background: "#101010".into(),
+            foreground: "#eeeeee".into(),
+            surface: "#202020".into(),
+            surface_variant: "#303030".into(),
+            accent: "#aa88cc".into(),
+            accent_1: "#aa88cc".into(),
+            accent_2: "#88aacc".into(),
+            accent_3: "#ccaa88".into(),
+            ui_accent: "#aa88cc".into(),
+            swatches: vec!["#aa88cc".into()],
+        };
+
+        for (wallpaper, accent) in [
+            ("/wallpapers/first wallpaper.png", "#aa88cc"),
+            ("/wallpapers/second wallpaper.png", "#88aacc"),
+        ] {
+            palette.wallpaper = PathBuf::from(wallpaper);
+            palette.ui_accent = accent.into();
+
+            let content = config_content(&palette).unwrap();
+            let config: serde_json::Value =
+                serde_json::from_str(content.strip_prefix(GENERATED_HEADER).unwrap()).unwrap();
+
+            assert_eq!(config["logo"]["source"], wallpaper);
+            assert_eq!(config["display"]["color"]["keys"], accent);
+        }
+    }
 }

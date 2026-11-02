@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 
 use calloop::{
     EventLoop,
+    signals::{Signal, Signals},
     timer::{TimeoutAction, Timer},
 };
 
@@ -38,6 +39,18 @@ pub struct App;
 
 impl App {
     pub fn run() -> Result<()> {
+        // Block SIGUSR1 before initializing Wayland so any spawned threads inherit
+        // the mask. Hyprwall uses this signal to request an immediate refresh.
+        let signals = Signals::new(&[Signal::SIGUSR1]).context("no se pudo escuchar SIGUSR1")?;
+        let mut event_loop: EventLoop<AppState> = EventLoop::try_new().context("no se pudo crear calloop EventLoop")?;
+        let loop_handle = event_loop.handle();
+
+        loop_handle
+            .insert_source(signals, |_event, _meta, app| {
+                app.refresh_colors_or_warn();
+            })
+            .map_err(|err| anyhow::anyhow!("signals insert failed: {err:?}"))?;
+
         let config = Config::load();
 
         let conn = Connection::connect_to_env().context("no se pudo conectar a Wayland")?;
@@ -53,10 +66,6 @@ impl App {
             should_close: false,
         };
 
-        let mut event_loop: EventLoop<AppState> = EventLoop::try_new().context("no se pudo crear calloop EventLoop")?;
-
-        let loop_handle = event_loop.handle();
-
         WaylandSource::new(conn, event_queue)
             .insert(loop_handle.clone())
             .map_err(|err| anyhow::anyhow!("WaylandSource insert failed: {err:?}"))?;
@@ -65,15 +74,13 @@ impl App {
 
         loop_handle
             .insert_source(timer, |_event, _meta, app| {
-                if let Err(err) = app.refresh_colors() {
-                    log::warn!("no se pudieron refrescar colores: {err:#}");
-                }
+                app.refresh_colors_or_warn();
 
                 TimeoutAction::ToDuration(app.config.poll_interval)
             })
             .map_err(|err| anyhow::anyhow!("timer insert failed: {err:?}"))?;
 
-        app.refresh_colors()?;
+        app.refresh_colors_or_warn();
 
         while !app.should_close {
             event_loop.dispatch(None, &mut app).context("event_loop dispatch")?;
@@ -86,6 +93,12 @@ impl App {
 // ── < AppState > ──────────────────
 
 impl AppState {
+    fn refresh_colors_or_warn(&mut self) {
+        if let Err(err) = self.refresh_colors() {
+            log::warn!("no se pudieron refrescar colores: {err:#}");
+        }
+    }
+
     fn refresh_colors(&mut self) -> Result<()> {
         let Some(wallpaper) = current_wallpaper_path() else {
             log::debug!("no se detectó wallpaper actual");
