@@ -16,7 +16,11 @@ pub fn export(palette: &Palette) -> Result<()> {
 
     atomic_write(&path, build_config(palette))?;
 
-    let _ = Command::new("pkill").args(["-USR1", "ghostty"]).output();
+    // Ghostty reloads on SIGUSR2; SIGUSR1 terminates the terminal.
+    // Skip instances still starting up, before their reload handler is ready.
+    let _ = Command::new("pkill")
+        .args(["-USR2", "--require-handler", "--exact", "ghostty"])
+        .output();
 
     Ok(())
 }
